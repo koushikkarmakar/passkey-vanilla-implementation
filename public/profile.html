@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="User profile page to register passkey authentication.">
+    <title>Profile</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            margin-bottom: 2rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .error {
+            color: red;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Profile Page</h1>
+        <button id="register-passkey-btn" aria-label="Register a new passkey">Register Passkey</button>
+        <div id="error-message" class="error" aria-live="polite" style="display: none;"></div>
+    </main>
+
+    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+    <script>
+        const registerPasskeyBtn = document.getElementById('register-passkey-btn');
+        const errorMessage = document.getElementById('error-message');
+
+        registerPasskeyBtn.addEventListener('click', async () => {
+            const url = new URL(window.location);
+            const userId = url.searchParams.get('userId');
+
+            if (!userId) {
+                showError('User ID not found.');
+                return;
+            }
+
+            try {
+                registerPasskeyBtn.disabled = true;
+
+                const response = await fetch('/register-challenge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId })
+                });
+
+                if (!response.ok) throw new Error('Failed to generate registration challenge.');
+
+                const { options } = await response.json();
+
+                const authenticationResult = await SimpleWebAuthnBrowser.startRegistration(options);
+                console.log(authenticationResult);
+
+                const verifyResponse = await fetch('/register-verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, cred: authenticationResult })
+                });
+
+                if (!verifyResponse.ok) throw new Error('Passkey registration verification failed.');
+
+                console.log('Passkey registered successfully!');
+                alert('Passkey registered successfully!');
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                registerPasskeyBtn.disabled = false;
+            }
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

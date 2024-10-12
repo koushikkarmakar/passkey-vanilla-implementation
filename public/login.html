@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Login with passkey using WebAuthn.">
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        form {
+            padding: 2rem;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .error {
+            color: red;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <form id="login-form" aria-label="Login Form">
+        <fieldset>
+            <legend>Login with Passkey</legend>
+
+            <label for="userId">User ID</label>
+            <input type="text" placeholder="Enter your user ID" id="userId" required aria-required="true" />
+
+            <button type="submit" aria-label="Login with Passkey">Login with Passkey</button>
+        </fieldset>
+        <div class="error" id="error-message" aria-live="polite" style="display: none;"></div>
+    </form>
+
+    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+    <script>
+        const form = document.getElementById('login-form');
+        const errorMessage = document.getElementById('error-message');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = document.getElementById('userId').value;
+
+            try {
+                // Send login challenge request
+                const response = await fetch('/login-challenge', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId })
+                });
+
+                if (!response.ok) throw new Error('Failed to initiate login challenge.');
+
+                const { options } = await response.json();
+
+                // Start authentication
+                const authenticationResult = await SimpleWebAuthnBrowser.startAuthentication(options);
+                console.log(authenticationResult);
+
+                // Verify the authentication result
+                const verifyResponse = await fetch('/login-verify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId, cred: authenticationResult })
+                });
+
+                if (!verifyResponse.ok) throw new Error('Login verification failed.');
+
+                console.log('Login successful!');
+                alert('Login successful!');
+            } catch (error) {
+                showError(error.message);
+            }
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

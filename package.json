@@ -1,0 +1,26 @@
+{
+  "name": "web-authentication",
+  "version": "1.0.1",
+  "description": "A simple web authentication server using passkeys and WebAuthn.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js --watch ./"
+  },
+  "keywords": [
+    "webauthn",
+    "passkey",
+    "authentication",
+    "express",
+    "nodejs"
+  ],
+  "author": "Your Name",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "dependencies": {
+    "@simplewebauthn/server": "^10.0.0",
+    "express": "^4.19.2"
+  }
+}
